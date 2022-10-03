@@ -1,4 +1,5 @@
 import { Peer, MediaConnection } from "peerjs";
+import Call from "./call";
 import { AppElements, getElements } from "./elements";
 
 import { getUserMedia } from "./util";
@@ -13,7 +14,9 @@ export default class PeerClient {
 
   private elements: AppElements = getElements();
 
-  private currentCall: MediaConnection | null = null;
+  private currentCall: Call | null = null;
+
+  private localStream: MediaStream | null = null;
 
   private ws = new WebSocket(`wss://${document.location.hostname}:9001/ws`);
 
@@ -25,16 +28,45 @@ export default class PeerClient {
       this.updateClients();
     });
 
-    this.peer.on('call', call => {
-      console.log(`Received a call from ${call.peer}`);
-      if(this.currentCall) {
-        call.close();
-        console.log("Automatically declined incoming call");
+    this.peer.on('connection', connection => {
+      console.log(`DataConnection from ${connection.peer}`);
 
-        return;
-      }
+      connection.on('data', (data) => {
+        if(data == 'call') {
+          console.log(this.currentCall);
+          
+          if(this.currentCall) {
+            connection.send('no');
+            connection.close();
 
-      this.answerCall(call, confirm(`Accept call from ${call.peer}?`));
+            return;
+          }
+
+          let answer = confirm(`Accept call from ${connection.peer}?`);
+          if(answer) {
+            connection.send('yes');
+
+            this.peer.once('call', (call) => {
+              document.body.classList.add("incall");
+
+              this.currentCall = new Call(connection, call);
+
+              this.processCall(this.currentCall);
+
+              getUserMedia({ video: true, audio: true }).then(stream => {
+                this.localStream = stream;
+
+                this.displayLocalVideo(stream);
+
+                this.currentCall!.answer(stream);
+              });
+            });
+          } else {
+            connection.send('no');
+            connection.close();
+          }
+        }
+      });
     });
 
     this.ws.onopen = () => {
@@ -52,6 +84,12 @@ export default class PeerClient {
     });
   }
 
+  private displayLocalVideo(stream: MediaStream) {
+    this.elements.video.local.pause();
+    this.elements.video.local.srcObject = stream;
+    this.elements.video.local.play();
+  }
+
   private updateClients() {
     this.elements.clients.innerHTML = "";
 
@@ -67,50 +105,52 @@ export default class PeerClient {
 
       this.elements.clients.append(div);
     }
-    // this.elements.clients
   }
 
   private call(id: string) {
-    document.body.classList.add("incall");
-
     if(this.currentCall) throw "Attempted to call while in another call";
 
-    console.log("Requesting user media");
+    let connection = this.peer.connect(id);
 
-    getUserMedia({ video: true, audio: true }).then(stream => {
-      this.elements.video.local.srcObject = stream;
-      this.elements.video.local.play();
+    connection.once('open', () => {
+      connection.send('call');
+    });
 
-      console.log("Initiating call");
+    connection.once('data', (data) => {
+      if(data == 'no') {
+        connection.close();
+        alert('Call declined');
+      } else if(data == 'yes') {
+        document.body.classList.add("incall");
 
-      let call = this.peer.call(id, stream);
-      this.currentCall = call;
+        console.log("Requesting user media");
 
-      call.on('stream', remoteStream => {
-        this.elements.video.remote.srcObject = remoteStream;
-        this.elements.video.remote.play();
-      });
-      call.on('iceStateChanged', state => {
-        console.log(state);
-      });
-      call.on('error', err => {
-        console.log("Call error occured");
-        console.error(err);
-      });
-      call.on('close', () => {
-        console.log("Call ended");
+        getUserMedia({ video: true, audio: true }).then(stream => {
+          this.localStream = stream;
 
-        this.currentCall = null;
+          this.displayLocalVideo(stream);
 
-        this.elements.video.local.srcObject = null;
-        this.elements.video.remote.srcObject = null;
+          let call = this.peer.call(id, stream);
 
-        document.body.classList.remove("incall");
+          this.currentCall = new Call(connection, call);
 
-        // TODO: Properly end the call
+          this.processCall(this.currentCall);
+        });
+      }
+    });
+  }
 
-        console.log("Call ended");
-      });
+  private processCall(call: Call) {
+    call.on('stream', (stream: MediaStream) => {
+      this.elements.video.remote.pause();
+      this.elements.video.remote.srcObject = stream;
+      this.elements.video.remote.play();
+    });
+    call.on('close', () => {
+      document.body.classList.remove("incall");
+      this.currentCall = null;
+      this.localStream?.getTracks().forEach(track => track.stop());
+      this.localStream = null;
     });
   }
 
@@ -124,7 +164,7 @@ export default class PeerClient {
         this.elements.video.local.srcObject = stream;
         this.elements.video.local.play();
 
-        this.currentCall = call;
+        // this.currentCall = call;
 
         call.answer(stream);
 
@@ -168,6 +208,6 @@ export default class PeerClient {
     if(!this.currentCall)
       throw "Trying to hang up while not in a call";
 
-    this.currentCall.close();
+    this.currentCall.hangup();
   }
 }
