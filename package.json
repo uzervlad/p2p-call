@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build:web": "cd front && npm run build"
+    "build:web": "cd front && npm run build",
+    "watch:web": "cd front && npm run watch"
   },
   "keywords": [],
   "author": "",
