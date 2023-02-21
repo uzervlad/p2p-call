@@ -1,8 +1,7 @@
 const { WebSocketServer } = require('ws');
 const express = require('express');
-const http = require('http');
 const https = require('https');
-const { PeerServer, ExpressPeerServer } = require('peer');
+const { ExpressPeerServer } = require('peer');
 const { readFileSync } = require('fs');
 
 const KEY = readFileSync('./key.pem');
@@ -16,7 +15,7 @@ const server = https.createServer({
 
 app.use(express.static('static'));
 
-app.use(function(req, res, next) {
+app.use(function(_, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
@@ -36,7 +35,7 @@ const wssHttps = https.createServer({
   key: KEY,
   cert: CERT,
 }).listen(9001);
-var wss = new WebSocketServer({ server: wssHttps });
+const wss = new WebSocketServer({ server: wssHttps });
 
 function wssBroadcast(message) {
   for(let client of wss.clients) {
@@ -88,5 +87,3 @@ peerServer.on("disconnect", (client) => {
   wssBroadcast([ ...peerClients ].toString());
   console.log("lost client", client.getId());
 });
-
-// PIZDEC

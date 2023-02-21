@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build:web": "cd front && npm run build",
-    "watch:web": "cd front && npm run watch"
+    "watch:web": "cd front && npm run watch",
+    "start": "node ."
   },
   "keywords": [],
   "author": "",

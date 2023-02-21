@@ -1,6 +1,10 @@
 # p2p-call
 
-> Complete fucking garbage
+## Prerequisites
+
+* Node
+
+* Gulp - `npm i -g gulp`
 
 ## How to run
 

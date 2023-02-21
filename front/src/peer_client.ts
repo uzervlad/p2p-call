@@ -2,6 +2,8 @@ import { Peer, MediaConnection } from "peerjs";
 import Call from "./call";
 import { AppElements, getElements } from "./elements";
 
+import { Confirm } from "notiflix/build/notiflix-confirm-aio";
+
 import { getUserMedia } from "./util";
 
 export default class PeerClient {
@@ -42,29 +44,37 @@ export default class PeerClient {
             return;
           }
 
-          let answer = confirm(`Accept call from ${connection.peer}?`);
-          if(answer) {
-            connection.send('yes');
+          Confirm.show(
+            'Incoming call',
+            `Accept call from ${connection.peer}?`,
+            'Yes',
+            'No',
+            // Accept
+            () => {
+              connection.send('yes');
 
-            this.peer.once('call', (call) => {
-              document.body.classList.add("incall");
+              this.peer.once('call', (call) => {
+                document.body.classList.add("incall");
 
-              this.currentCall = new Call(connection, call);
+                this.currentCall = new Call(connection, call);
 
-              this.processCall(this.currentCall);
+                this.processCall(this.currentCall);
 
-              getUserMedia({ video: true, audio: true }).then(stream => {
-                this.localStream = stream;
+                getUserMedia({ video: true, audio: true }).then(stream => {
+                  this.localStream = stream;
 
-                this.displayLocalVideo(stream);
+                  this.displayLocalVideo(stream);
 
-                this.currentCall!.answer(stream);
+                  this.currentCall!.answer(stream);
+                });
               });
-            });
-          } else {
-            connection.send('no');
-            connection.close();
-          }
+            },
+            // Reject
+            () => {
+              connection.send('no');
+              connection.close();
+            }
+          );
         }
       });
     });
@@ -152,56 +162,6 @@ export default class PeerClient {
       this.localStream?.getTracks().forEach(track => track.stop());
       this.localStream = null;
     });
-  }
-
-  private answerCall(call: MediaConnection, accept: boolean) {
-    if(accept) {
-      console.log("Requesting user media")
-
-      document.body.classList.add("incall");
-
-      getUserMedia({ video: true, audio: true }).then(stream => {
-        this.elements.video.local.srcObject = stream;
-        this.elements.video.local.play();
-
-        // this.currentCall = call;
-
-        call.answer(stream);
-
-        call.on('stream', remoteStream => {
-          console.log("Received stream");
-          console.log("yey");
-
-          this.elements.video.remote.pause();
-          this.elements.video.remote.srcObject = remoteStream;
-          this.elements.video.remote.play();
-        });
-        call.on('iceStateChanged', state => {
-          console.log(state);
-        });
-        call.on('error', err => {
-          console.log("Call error occured");
-          console.error(err);
-        });
-        call.on('close', () => {
-          console.log("Call ended");
-
-          this.currentCall = null;
-
-          this.elements.video.local.srcObject = null;
-          this.elements.video.remote.srcObject = null;
-
-          document.body.classList.remove("incall");
-          
-          // TODO: Properly end the call
-
-          console.log("Call ended");
-        });
-      });
-    } else {
-      call.close();
-      console.log("Manually declined incoming call");
-    }
   }
 
   private hangup() {
