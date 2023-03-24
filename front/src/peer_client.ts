@@ -99,11 +99,13 @@ export default class PeerClient {
     this.elements.mute.addEventListener("click", () => {
       this.muted = !this.muted;
       this.updateStream();
+      this.updateButtons();
     });
 
     this.elements.hide.addEventListener("click", () => {
       this.hidden = !this.hidden;
       this.updateStream();
+      this.updateButtons();
     });
   }
 
@@ -115,7 +117,7 @@ export default class PeerClient {
 
   private updateButtons() {
     this.elements.mute.children[0].className = `fa-solid fa-microphone${this.muted ? '-slash' : ''}`;
-    this.elements.hide.children[0].className = `fa-solid fa-camera${this.muted ? '-slash' : ''}`;
+    this.elements.hide.children[0].className = `fa-solid fa-camera${this.hidden ? '-slash' : ''}`;
   }
 
   private displayLocalVideo(stream: MediaStream) {
