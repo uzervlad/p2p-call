@@ -5,6 +5,8 @@ export interface AppElements {
   },
   clients: HTMLDivElement;
   hangup: HTMLButtonElement;
+  mute: HTMLButtonElement;
+  hide: HTMLButtonElement;
 }
 
 export function getElements(): AppElements {
@@ -15,5 +17,7 @@ export function getElements(): AppElements {
     },
     clients: document.querySelector(".clients") as HTMLDivElement,
     hangup: document.querySelector(".hangup") as HTMLButtonElement,
+    mute: document.querySelector(".mute") as HTMLButtonElement,
+    hide: document.querySelector(".hide") as HTMLButtonElement,
   }
 }

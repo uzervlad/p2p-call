@@ -20,6 +20,9 @@ export default class PeerClient {
 
   private localStream: MediaStream | null = null;
 
+  private muted: boolean = false;
+  private hidden: boolean = false;
+
   private ws = new WebSocket(`wss://${document.location.hostname}:9001/ws`);
 
   private clients: string[] = [];
@@ -92,6 +95,27 @@ export default class PeerClient {
     this.elements.hangup.addEventListener("click", () => {
       this.hangup();
     });
+
+    this.elements.mute.addEventListener("click", () => {
+      this.muted = !this.muted;
+      this.updateStream();
+    });
+
+    this.elements.hide.addEventListener("click", () => {
+      this.hidden = !this.hidden;
+      this.updateStream();
+    });
+  }
+
+  private updateStream() {
+    this.localStream!.getAudioTracks()[0].enabled = !this.muted;
+    this.localStream!.getVideoTracks()[0].enabled = !this.hidden;
+    this.peer.call(this.currentCall!.media.peer, this.localStream!);
+  }
+
+  private updateButtons() {
+    this.elements.mute.children[0].className = `fa-solid fa-microphone${this.muted ? '-slash' : ''}`;
+    this.elements.hide.children[0].className = `fa-solid fa-camera${this.muted ? '-slash' : ''}`;
   }
 
   private displayLocalVideo(stream: MediaStream) {
@@ -145,6 +169,10 @@ export default class PeerClient {
           this.currentCall = new Call(connection, call);
 
           this.processCall(this.currentCall);
+        }).catch(e => {
+          connection.send('close');
+          connection.close();
+          alert("Camera/microphone permissions are required");
         });
       }
     });

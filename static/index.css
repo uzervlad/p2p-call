@@ -91,7 +91,22 @@ body>div {
 button {
   border: none;
 
+  width: 70px;
+  height: 70px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 50%;
+
+  /* font-size: 40px; */
+
   cursor: pointer;
+}
+
+i {
+  font-size: 30px;
 }
 
 .hangup {
@@ -100,17 +115,22 @@ button {
   bottom: 15px;
   left: 15px;
 
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
   background: #ca2222;
   color: white;
+}
 
-  width: 70px;
-  height: 70px;
+.controls {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
 
-  border-radius: 50%;
+  transform: translateX(-50%);
 
-  font-size: 40px;
+  display: flex;
+  flex-direction: row;
+}
+
+.controls>button {
+  margin: 0 8px;
+  background: #0b5ed7;
 }

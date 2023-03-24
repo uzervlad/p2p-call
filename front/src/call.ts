@@ -20,8 +20,8 @@ interface ICall {
 
 export default class Call extends EventEmitter implements ICall {
   constructor(
-    private data: DataConnection,
-    private media: MediaConnection
+    public data: DataConnection,
+    public media: MediaConnection
   ) {
     super();
 
