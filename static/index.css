@@ -66,11 +66,19 @@ body>div {
   background: #222;
 }
 
+video {
+  background: black;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+
+  border-radius: 15px;
+}
+
 #remote {
   position: absolute;
   top: 50vh;
   left: 50vw;
-  height: 80%;
+  height: 70%;
   width: auto;
   
   z-index: 2;
